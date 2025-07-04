@@ -22,3 +22,179 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.*;
+
+public class Tic_ac_toe extends JFrame implements ActionListener {
+
+    private final JButton[] button = new JButton[9];
+    private final JLabel message = new JLabel("Player X's Turn");
+    private final JButton newGameButton = new JButton("New Game");
+
+    private boolean xTurn = true;
+    private boolean gameEnded = false;
+
+    // Position weights: index 0–8 corresponds to positions 1–9
+    private final int[] weights = {3, 2, 3, 2, 4, 2, 3, 2, 3};
+
+    // 8 Winning vectors
+    private final int[][] vectors = {
+        {0, 1, 2}, {3, 4, 5}, {6, 7, 8}, // Rows
+        {0, 3, 6}, {1, 4, 7}, {2, 5, 8}, // Columns
+        {0, 4, 8}, {2, 4, 6}             // Diagonals
+    };
+
+    // Game state
+    private final Map<Integer, Character> boardState = new HashMap<>();
+    private final Map<Integer, Character> vectorOwners = new HashMap<>();
+    private int scoreX = 0;
+    private int scoreO = 0;
+
+    public Tic_ac_toe() {
+        setTitle("Tic Tac Toe - Vector Point System");
+        setLocation(500, 150);
+        setSize(220, 310);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        Container cp = getContentPane();
+        cp.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        cp.setBackground(Color.BLACK);
+
+        JPanel buttonPanel = new JPanel(new GridLayout(3, 3, 2, 2));
+        buttonPanel.setPreferredSize(new Dimension(200, 200));
+        buttonPanel.setBackground(Color.BLACK);
+
+        for (int i = 0; i < 9; i++) {
+            button[i] = new JButton();
+            button[i].setFont(new Font("Arial", Font.BOLD, 40));
+            button[i].setFocusPainted(false);
+            button[i].setBackground(Color.WHITE);
+            button[i].addActionListener(this);
+            buttonPanel.add(button[i]);
+            boardState.put(i, ' ');
+        }
+
+        JPanel labelPanel = new JPanel();
+        labelPanel.setPreferredSize(new Dimension(200, 20));
+        labelPanel.setBackground(Color.BLACK);
+        labelPanel.add(message);
+
+        JPanel newGamePanel = new JPanel(new FlowLayout());
+        newGamePanel.setPreferredSize(new Dimension(200, 50));
+        newGamePanel.setBackground(Color.BLACK);
+        newGameButton.setPreferredSize(new Dimension(100, 35));
+        newGameButton.setFocusPainted(false);
+        newGameButton.addActionListener(this);
+        newGamePanel.add(newGameButton);
+
+        cp.add(labelPanel);
+        cp.add(buttonPanel);
+        cp.add(newGamePanel);
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == newGameButton) {
+            resetGame();
+            return;
+        }
+
+        for (int i = 0; i < 9; i++) {
+            if (e.getSource() == button[i] && !gameEnded && button[i].getText().equals("")) {
+                char currentPlayer = xTurn ? 'X' : 'O';
+                char opponent = xTurn ? 'O' : 'X';
+
+                button[i].setText(String.valueOf(currentPlayer));
+                boardState.put(i, currentPlayer);
+
+                // 1. Gain cell weight
+                if (currentPlayer == 'X') scoreX += weights[i];
+                else scoreO += weights[i];
+
+                // 2. Vector logic
+                for (int v = 0; v < vectors.length; v++) {
+                    int[] vec = vectors[v];
+                    if (contains(vec, i)) {
+                        Character owner = vectorOwners.getOrDefault(v, null);
+                        if (owner == null) {
+                            vectorOwners.put(v, currentPlayer);
+                        } else if (owner != currentPlayer && owner != 'D') {
+                            // Vector destroyed
+                            vectorOwners.put(v, 'D');
+                            if (owner == 'X') scoreX--;
+                            else if (owner == 'O') scoreO--;
+                        }
+                    }
+                }
+
+                // 3. Win check
+                if (checkVectorWin(currentPlayer)) {
+                    message.setText("Player " + currentPlayer + " Wins!");
+                    gameEnded = true;
+                    return;
+                }
+
+                // 4. Tie check
+                if (allVectorsDead() || (scoreX <= 0 && scoreO <= 0)) {
+                    message.setText("Tie Game");
+                    gameEnded = true;
+                    return;
+                }
+
+                // 5. Next turn
+                xTurn = !xTurn;
+                message.setText("Player " + (xTurn ? "X" : "O") + "'s Turn");
+                return;
+            }
+        }
+    }
+
+    private boolean contains(int[] vec, int pos) {
+        for (int v : vec) {
+            if (v == pos) return true;
+        }
+        return false;
+    }
+
+    private boolean checkVectorWin(char player) {
+        for (int[] vec : vectors) {
+            if (boardState.get(vec[0]) == player &&
+                boardState.get(vec[1]) == player &&
+                boardState.get(vec[2]) == player) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean allVectorsDead() {
+        for (int v = 0; v < vectors.length; v++) {
+            Character owner = vectorOwners.get(v);
+            if (owner == null || owner == 'X' || owner == 'O') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void resetGame() {
+        for (int i = 0; i < 9; i++) {
+            button[i].setText("");
+            button[i].setEnabled(true);
+            boardState.put(i, ' ');
+        }
+        vectorOwners.clear();
+        scoreX = 0;
+        scoreO = 0;
+        xTurn = true;
+        gameEnded = false;
+        message.setText("Player X's Turn");
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new Tic_ac_toe().setVisible(true));
+    }
+}
