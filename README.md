@@ -1,4 +1,4 @@
-# VectorPointTicTacToe
+# Vector-based point ownership and destruction model for TicTacToe
 Tic Tac Toe game implementing the Vector-Based Point Ownership and Destruction model
 
 Title: A Novel Vector-Based Point Ownership and Destruction Model for Strategic Gameplay
